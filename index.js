@@ -198,6 +198,10 @@ app.put('/removeInvoice', authenticateToken, (req, res) => {
         .catch()
 })
 
+app.get('/', (req, res) => {
+    res.send('Hello world!')
+})
+
 // Khởi động server
 app.listen(8080, () => {
     console.log('Server đang chạy trên cổng 8080');
