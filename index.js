@@ -8,11 +8,28 @@ const userModel = require('./Models/userModel')
 const productModel = require('./Models/productModel')
 const cartModel = require('./Models/cartModel')
 const invoiceModel = require('./Models/invoiceModel')
+const dns = require('dns');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '10mb' }));
+
+// Middleware kiểm tra tên miền
+const allowOnlyFromDomain = (allowedDomain) => {
+    return (req, res, next) => {
+        const clientDomain = req.headers.referer;
+        if (clientDomain !== allowedDomain) {
+            res.status(403).send('Forbidden'); // Trả về lỗi 403 nếu tên miền không được phép
+        } else {
+            next(); // Cho phép tiếp tục xử lý
+        }
+    };
+};
+
+
+// Middleware kiểm tra tên miền
+app.use(allowOnlyFromDomain(process.env.URL_REACT));
 
 //Connect database
 mongoose.connect(process.env.MONGODB_URL)
@@ -133,11 +150,12 @@ app.get('/products', (req, res) => {
             res.send(products)
         })
         .catch()
+
 })
 
 // Phần xóa sản phẩm
-app.delete("/removeProduct", (req, res) => {
-    productModel.deleteOne({ _id: req.body.id })
+app.put("/removeProduct", (req, res) => {
+    productModel.deleteOne({ _id: req.body.data.id })
         .then(() => {
             cartModel.deleteMany({ idProduct: req.body.id })
                 .then(() => {
@@ -168,7 +186,7 @@ app.post("/addToCart", (req, res) => {
 })
 
 //Xóa product ra khỏi cart
-app.delete("/removeToCart", (req, res) => {
+app.put("/removeToCart", (req, res) => {
     cartModel.deleteOne({ email: req.body.data.email, idProduct: req.body.data.idProduct })
         .then(() => res.send({ message: "Remove to cart successfully" }))
         .catch()
